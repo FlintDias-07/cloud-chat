@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CloudChat - Chat Room</title>
+    <link rel="stylesheet" href="assets/chat-style.css" />
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  </head>
+  <body>
+    <div class="chat-container">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <!-- User Profile Section -->
+        <div class="user-profile">
+          <img id="userAvatar" class="avatar" src="" alt="User Avatar" />
+          <div class="user-info">
+            <div id="displayUsername" class="username">Loading...</div>
+            <div class="status online">● Online</div>
+          </div>
+          <button id="logoutBtn" class="logout-btn" title="Logout">⟵</button>
+        </div>
+
+        <!-- Rooms List -->
+        <div class="rooms-section">
+          <h3>Rooms</h3>
+          <div class="rooms-list">
+            <button class="room-btn active" data-room="general">
+              <span class="room-icon">#</span>
+              <span class="room-name">General</span>
+              <span class="room-users">0</span>
+            </button>
+            <button class="room-btn" data-room="tech">
+              <span class="room-icon">#</span>
+              <span class="room-name">Tech</span>
+              <span class="room-users">0</span>
+            </button>
+            <button class="room-btn" data-room="random">
+              <span class="room-icon">#</span>
+              <span class="room-name">Random</span>
+              <span class="room-users">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Online Users -->
+        <div class="users-section">
+          <h3>Online Users</h3>
+          <div id="onlineUsers" class="users-list">
+            <div class="empty-state">No users online</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Chat Area -->
+      <div class="chat-main">
+        <!-- Header -->
+        <div class="chat-header">
+          <div class="header-content">
+            <h2 id="roomTitle">General</h2>
+            <p id="roomDescription">Welcome to the general discussion room</p>
+          </div>
+          <div class="header-actions">
+            <button
+              class="action-btn"
+              title="Profile"
+              id="profileBtn"
+              onclick="goToProfile()"
+            >
+              👤
+            </button>
+            <button
+              class="action-btn"
+              title="Search"
+              id="searchBtn"
+              onclick="toggleSearch()"
+            >
+              🔍
+            </button>
+            <button
+              class="action-btn"
+              title="Settings"
+              id="settingsBtn"
+              onclick="toggleSettings()"
+            >
+              ⚙️
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="messagesContainer" class="messages-container">
+          <div class="welcome-message">
+            <h3>Welcome to CloudChat! 👋</h3>
+            <p>Start a conversation or join an existing discussion</p>
+          </div>
+        </div>
+
+        <!-- Message Input -->
+        <div class="message-input-area">
+          <form id="messageForm" class="message-form">
+            <input
+              type="text"
+              id="messageInput"
+              placeholder="Type your message..."
+              autocomplete="off"
+            />
+            <button type="submit" class="send-btn" title="Send message">
+              <span>Send</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="notification-toast"></div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>CloudChat Settings</h2>
+          <button class="close-btn" onclick="closeSettingsModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <!-- Profile Section -->
+          <div class="settings-section">
+            <h3>Profile Settings</h3>
+            <div class="setting-item">
+              <label>Username</label>
+              <input
+                type="text"
+                id="settingUsername"
+                placeholder="Enter username"
+              />
+            </div>
+            <div class="setting-item">
+              <label>Status Message</label>
+              <input
+                type="text"
+                id="settingStatus"
+                placeholder="What's on your mind?"
+              />
+            </div>
+            <div class="setting-item">
+              <label>Avatar URL</label>
+              <input
+                type="text"
+                id="settingAvatar"
+                placeholder="Enter avatar image URL"
+              />
+            </div>
+            <button class="save-btn" onclick="saveProfileSettings()">
+              Save Profile
+            </button>
+          </div>
+
+          <!-- Theme Section -->
+          <div class="settings-section">
+            <h3>Theme Settings</h3>
+            <div class="setting-item">
+              <label>Select Theme</label>
+              <div class="theme-options">
+                <button
+                  class="theme-btn"
+                  data-theme="light"
+                  onclick="setTheme('light')"
+                >
+                  ☀️ Light
+                </button>
+                <button
+                  class="theme-btn"
+                  data-theme="dark"
+                  onclick="setTheme('dark')"
+                >
+                  🌙 Dark
+                </button>
+                <button
+                  class="theme-btn"
+                  data-theme="auto"
+                  onclick="setTheme('auto')"
+                >
+                  ⚡ Auto
+                </button>
+              </div>
+            </div>
+            <div class="setting-item">
+              <label>
+                <input type="checkbox" id="notificationToggle" />
+                Enable Notifications
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>
+                <input type="checkbox" id="soundToggle" checked />
+                Enable Sound Alerts
+              </label>
+            </div>
+          </div>
+
+          <!-- Room Settings -->
+          <div class="settings-section">
+            <h3>Chat Preferences</h3>
+            <div class="setting-item">
+              <label>
+                <input type="checkbox" id="showOnlineUsers" checked />
+                Show Online Users
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>
+                <input type="checkbox" id="showReadReceipts" checked />
+                Show Message Read Receipts
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" onclick="closeSettingsModal()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Room Info Modal -->
+    <div id="roomInfoModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="roomInfoTitle">Room Information</h2>
+          <button class="close-btn" onclick="closeRoomInfoModal()">
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="room-info-content">
+            <div class="info-item">
+              <label>Room Name</label>
+              <p id="roomInfoName"></p>
+            </div>
+            <div class="info-item">
+              <label>Description</label>
+              <p id="roomInfoDesc"></p>
+            </div>
+            <div class="info-item">
+              <label>Members Online</label>
+              <p id="roomInfoMembers"></p>
+            </div>
+            <div class="info-item">
+              <label>Room Features</label>
+              <ul id="roomFeaturesList"></ul>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" onclick="closeRoomInfoModal()">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div
+      id="modalOverlay"
+      class="modal-overlay"
+      onclick="closeAllModals()"
+    ></div>
+
+    <script src="assets/chat.js"></script>
+  </body>
+</html>
